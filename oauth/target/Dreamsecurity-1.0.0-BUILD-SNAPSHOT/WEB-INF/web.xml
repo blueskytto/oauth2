@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>/WEB-INF/spring/root-context.xml</param-value>
+	</context-param>
+
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	<listener>
+		<listener-class>com.dreamsecurity.auth.listener.AuthLoaderListener</listener-class>
+	</listener>
+	
+	<!-- License 파일 경로가 변경될 경우 절대경로로 입력 -->
+	<!--
+	<context-param>
+        <param-name>licensePath</param-name>
+        <param-value>/license</param-value>
+    </context-param>
+     -->
+ 	
+	<servlet>
+		<servlet-name>appServlet</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>/WEB-INF/spring/appServlet/servlet-context.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>appServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+
+	<!-- 크로스 도메인 필터 -->
+	<filter>
+		<filter-name>cors</filter-name>
+		<filter-class>com.dreamsecurity.auth.filter.CORSFilter</filter-class>
+	</filter>
+	
+	<!-- 인코딩 필터 -->
+	<filter>
+		<filter-name>encodingFilter</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>utf-8</param-value>
+		</init-param>
+	</filter>
+	
+	<!-- XSS 필터 -->
+	<filter>
+		<filter-name>xss</filter-name>
+		<filter-class>com.dreamsecurity.auth.filter.XssSecurityFilter</filter-class>
+	</filter>
+	
+	<!-- HTTP Method Filter -->
+	<filter>
+	    <filter-name>httpMethodFilter</filter-name>
+	    <filter-class>org.springframework.web.filter.HiddenHttpMethodFilter</filter-class>
+	</filter>
+	
+	<filter-mapping>
+		<filter-name>cors</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>encodingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>xss</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+	    <filter-name>httpMethodFilter</filter-name>
+	    <url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+</web-app>

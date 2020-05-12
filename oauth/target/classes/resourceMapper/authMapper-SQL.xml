@@ -1,0 +1,559 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="oauth">
+
+	<!-- 테이블명 선언 -->
+	<sql id="authorCodeTable">OAUTH_AUTHOR_CODE</sql>
+	<sql id="clientTable">OAUTH_CLIENT</sql>
+	<sql id="clientRedirectUriTable">OAUTH_CLIENT_REDIRECT_URI</sql>
+	<sql id="accessTokenTable">OAUTH_ACCESS_TOKEN</sql>
+	<sql id="userTable">OAUTH_USER</sql>
+	<sql id="defaultScopesTable">OAUTH_DEFAULT_SCOPES</sql>
+	<sql id="defaultGrantTypesTable">OAUTH_DEFAULT_GRANT_TYPES</sql>
+	<sql id="apiTable">OAUTH_API_SERVER</sql>
+	<sql id="apiLogTable">OAUTH_LOG_API</sql>
+
+	<!-- 사용자 정보 조회 -->
+	<select id="getUserInfo" parameterType="string" resultType="hashmap">
+		SELECT
+			USER_ID,
+			USER_PASSWORD,
+			USER_ROLE
+		FROM
+		<include refid="userTable" />
+		WHERE
+			USER_ID = #{userId}
+	</select>
+
+	<!-- Client 정보 조회 -->
+	<select id="getClientInfoByClientId" parameterType="string" resultType="hashmap">
+		SELECT
+			CLIENT_ID,
+			CLIENT_SECRET,
+			CLIENT_NAME,
+			CLIENT_OWNER,
+			CLIENT_TOKEN_EXPIRES,
+			CLIENT_TOKEN_TYPE,
+			CLIENT_REFRESH_EXPIRES,
+			CLIENT_SCOPES,
+			CLIENT_GRANT_TYPES,
+			CLIENT_TOKEN_AUTOEX,
+			TO_CHAR(CLIENT_CREATION_DATE, 'YYYYMMDDHH24MISS') AS CLIENT_CREATION_DATE
+		FROM
+		<include refid="clientTable" />
+		WHERE
+			CLIENT_ID = #{clientId}
+	</select>
+	
+	<!-- Client 유무 확인 -->
+    <select id="getClientCheck" parameterType="map" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM
+		<include refid="clientTable" />
+		WHERE
+			CLIENT_ID = #{clientId}
+    </select>
+	
+	<!-- Client 총 갯수 -->
+    <select id="getClientTotalList" parameterType="map" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM
+		<include refid="clientTable" />
+		<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(clientOwner)">
+		WHERE
+			CLIENT_OWNER = #{clientOwner}
+		</if>
+    </select>
+	
+	<!-- Client List 전체 조회 -->
+	<select id="getClientList" parameterType="map" resultType="hashmap">
+		SELECT *
+		FROM (
+			SELECT ROWNUM RNUM, A.*
+			FROM (
+				SELECT
+					CLIENT_ID,
+					CLIENT_NAME,
+					CLIENT_OWNER,
+					TO_CHAR(CLIENT_CREATION_DATE, 'YYYY-MM-DD-HH24:MI:SS') AS CLIENT_CREATION_DATE
+				FROM
+				<include refid="clientTable" />
+				<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(clientOwner)">
+				WHERE
+		            CLIENT_OWNER = #{clientOwner}
+			    </if>
+				ORDER BY
+					CLIENT_OWNER asc, CLIENT_CREATION_DATE asc
+			) A
+		) WHERE RNUM BETWEEN #{pStart, jdbcType=INTEGER} AND #{pEnd, jdbcType=INTEGER}
+	</select>
+	
+	<!-- client 저장-->
+	<insert id="setClient" parameterType="map">
+		INSERT INTO
+		<include refid="clientTable" />
+		(
+			CLIENT_ID,
+			CLIENT_NAME,
+			CLIENT_SECRET,
+			CLIENT_OWNER,
+			CLIENT_TOKEN_EXPIRES,
+			CLIENT_TOKEN_TYPE,
+			CLIENT_REFRESH_EXPIRES,
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(scopes)">
+			CLIENT_SCOPES,
+			</if>
+			CLIENT_CREATION_DATE,
+			CLIENT_GRANT_TYPES,
+			CLIENT_TOKEN_AUTOEX
+		)
+		VALUES
+		(
+			#{clientId},
+			#{clientName},
+			#{clientSecret},
+            #{clientOwner},
+            #{clientTokenEx},
+            #{tokenRadio},
+            #{clientReTokenEx},
+            <if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(scopes)">
+            #{scopes},
+            </if>
+			SYSDATE,
+			#{grantTypes},
+			#{autoExToken}
+		)
+	</insert>
+	
+	<!-- Client 삭제 -->
+	<delete id="deleteClient" parameterType="map">
+		DELETE FROM
+		<include refid="clientTable" />
+		WHERE
+			CLIENT_ID = #{clientId}
+	</delete>
+	
+	<!-- 기본 Scope List 전체 조회 -->
+	<select id="getScopesList" resultType="hashmap">
+		SELECT
+			SCOPE
+		FROM
+		<include refid="defaultScopesTable" />
+		ORDER BY
+			SCOPE asc
+	</select>
+	
+	<!-- 기본 Grant Type List 전체 조회 -->
+	<select id="getGrantTypesList" resultType="hashmap">
+		SELECT
+			GRANT_TYPE
+		FROM
+		<include refid="defaultGrantTypesTable" />
+		ORDER BY
+			GRANT_TYPE asc
+	</select>
+	
+	<!-- Client 정보 변경 -->
+	<update id="updateClientInfo" parameterType="map">
+		UPDATE
+			<include refid="clientTable" />
+		SET
+			CLIENT_NAME = #{clientName},
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(clientSecret)">
+            CLIENT_SECRET = #{clientSecret},
+	        </if>
+			CLIENT_TOKEN_EXPIRES = #{clientTokenEx},
+			CLIENT_TOKEN_TYPE = #{tokenRadio},
+			CLIENT_REFRESH_EXPIRES = #{clientReTokenEx},
+			CLIENT_SCOPES = #{scopes},
+			CLIENT_GRANT_TYPES = #{grantTypes},
+			CLIENT_TOKEN_AUTOEX = #{autoExToken}
+		WHERE
+			CLIENT_ID = #{clientId}
+	</update>
+
+	<!-- Client Uri List 삭제 -->
+	<delete id="deleteClientUriList" parameterType="string">
+		DELETE FROM
+			<include refid="clientRedirectUriTable" />
+		WHERE
+			CLIENT_ID = #{clientId}
+	</delete>
+	
+	<!-- Client Uri 저장-->
+	<insert id="setClientUri" parameterType="map">
+			INSERT ALL
+			<foreach collection="uriList" item="item">
+				INTO
+				<include refid="clientRedirectUriTable" />
+				(
+					CLIENT_ID,
+					REDIRECT_URI
+				)
+				VALUES
+				(
+					#{clientId},
+					#{item, jdbcType=VARCHAR}
+				)
+			</foreach>
+			SELECT * FROM DUAL
+	</insert>
+
+	<!-- Authorization Request Code 저장-->
+	<insert id="setAuthorCode" parameterType="map">
+		INSERT INTO
+		<include refid="authorCodeTable" />
+		(
+			CODE,
+			CLIENT_ID,
+			CODE_CREATION_DATE,
+			CODE_USABLE,
+			SCOPE,
+			USER_ID,
+			CODE_EXPIRY_DATE
+		)
+		VALUES
+		(
+			#{code},
+			#{clientId},
+			SYSDATE,
+			'Y',
+			#{scope},
+			#{userId},
+			TO_DATE(#{codeExDate}, 'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<!-- Authorization Request Code 조회 -->
+	<select id="getAuthorCode" parameterType="map" resultType="hashmap">
+		SELECT
+			A.CODE,
+			A.CLIENT_ID,
+			A.CODE_USABLE,
+			A.SCOPE,
+			A.USER_ID,
+			TO_CHAR(A.CODE_CREATION_DATE, 'YYYYMMDDHH24MISS') AS CODE_CREATION_DATE,
+			TO_CHAR(A.CODE_EXPIRY_DATE, 'YYYYMMDDHH24MISS') AS CODE_EXPIRY_DATE,
+			B.CLIENT_SECRET,
+			B.CLIENT_TOKEN_EXPIRES,
+			B.CLIENT_TOKEN_TYPE,
+			B.CLIENT_REFRESH_EXPIRES
+		FROM
+		<include refid="authorCodeTable" /> A,
+		<include refid="clientTable" /> B
+		
+		WHERE
+			A.CODE = #{code}
+		AND A.CLIENT_ID = #{clientId}
+		AND B.CLIENT_ID = A.CLIENT_ID
+	</select>
+	
+	<!-- Authorization Request Code 상태값 변경 -->
+	<update id="updateAuthorCodeStatus" parameterType="map">
+		UPDATE
+			<include refid="authorCodeTable" />
+		SET
+			CODE_USABLE = #{usableCode}
+		WHERE
+			CODE = #{code}
+	</update>
+	
+	<!-- Authorization Request Redirect Uri 조회 -->
+	<select id="getClientRedirectUriByClientId" parameterType="string" resultType="hashmap">
+		SELECT
+			CLIENT_ID,
+			REDIRECT_URI
+		FROM
+		<include refid="clientRedirectUriTable" />
+		WHERE
+			CLIENT_ID = #{clientId}
+	</select>
+	
+	<!-- AccessToken 저장-->
+	<insert id="setAccessToken" parameterType="map">
+		INSERT INTO
+		<include refid="accessTokenTable" />
+		(
+			CLIENT_ID,
+			ACCESS_TOKEN,
+			ATOKEN_EXPIRY_DATE,
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(refreshToken)">
+            REFRESH_TOKEN,
+            RTOKEN_EXPIRY_DATE,
+	        </if>
+	        <if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(issuer)">
+            ISSUER,
+	        </if>
+	        <if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(userId)">
+            USER_ID,
+	        </if>
+	        <if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(scope)">
+            SCOPE,
+	        </if>
+			CREATION_DATE
+			
+		)
+		VALUES
+		(
+			#{clientId},
+			#{accessToken},
+			TO_DATE(#{accessTokenExDate}, 'YYYYMMDDHH24MISS'),
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(refreshToken)">
+            #{refreshToken},
+            TO_DATE(#{refreshTokenExDate}, 'YYYYMMDDHH24MISS'),
+	        </if>
+	        <if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(issuer)">
+            #{issuer},
+	        </if>
+	        <if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(userId)">
+            #{userId},
+	        </if>
+	        <if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(scope)">
+            #{scope},
+	        </if>
+			SYSDATE
+			
+		)
+	</insert>
+	
+	<!-- AccessToken 업데이트-->
+	<update id="updateAccessToken" parameterType="map">
+		UPDATE
+			<include refid="accessTokenTable" />
+		SET
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(refreshToken)">
+            	REFRESH_TOKEN = #{refreshToken}, 
+            	RTOKEN_EXPIRY_DATE = TO_DATE(#{refreshTokenExDate}, 'YYYYMMDDHH24MISS'),
+	        </if>
+	        ACCESS_TOKEN = #{accessToken},
+			ATOKEN_EXPIRY_DATE = TO_DATE(#{accessTokenExDate}, 'YYYYMMDDHH24MISS')
+		WHERE
+			ACCESS_TOKEN = #{asisAccessToken}
+		AND CLIENT_ID = #{clientId}
+	</update>
+	
+	<!-- AccessToken 조회 (RefreshToKen 이용)-->
+	<select id="getAccessTokenByRefreshToken" parameterType="map" resultType="hashmap">
+		SELECT
+			A.CLIENT_ID,
+			A.ACCESS_TOKEN,
+			A.REFRESH_TOKEN,
+			A.USER_ID,
+			A.SCOPE,
+			A.ISSUER,
+			TO_CHAR(A.ATOKEN_EXPIRY_DATE, 'YYYYMMDDHH24MISS') AS ATOKEN_EXPIRY_DATE,
+			TO_CHAR(A.RTOKEN_EXPIRY_DATE, 'YYYYMMDDHH24MISS') AS RTOKEN_EXPIRY_DATE,
+			TO_CHAR(A.CREATION_DATE, 'YYYYMMDDHH24MISS') AS CREATION_DATE,
+			B.CLIENT_TOKEN_EXPIRES,
+			B.CLIENT_REFRESH_EXPIRES,
+			B.CLIENT_TOKEN_TYPE,
+			B.CLIENT_TOKEN_AUTOEX
+		FROM
+		<include refid="accessTokenTable" /> A,
+		<include refid="clientTable" /> B
+		WHERE
+			A.REFRESH_TOKEN = #{refreshToken}
+		AND B.CLIENT_ID = A.CLIENT_ID
+	</select>
+	
+	<!-- AccessToken 조회 (AccessToken 이용)-->
+	<select id="getAccessToken" parameterType="map" resultType="hashmap">
+		SELECT
+			A.CLIENT_ID,
+			A.ACCESS_TOKEN,
+			A.REFRESH_TOKEN,
+			A.USER_ID,
+			A.SCOPE,
+			A.ISSUER,
+			TO_CHAR(A.ATOKEN_EXPIRY_DATE, 'YYYYMMDDHH24MISS') AS ATOKEN_EXPIRY_DATE,
+			TO_CHAR(A.RTOKEN_EXPIRY_DATE, 'YYYYMMDDHH24MISS') AS RTOKEN_EXPIRY_DATE,
+			TO_CHAR(A.CREATION_DATE, 'YYYYMMDDHH24MISS') AS CREATION_DATE,
+			B.CLIENT_TOKEN_EXPIRES,
+			B.CLIENT_REFRESH_EXPIRES,
+			B.CLIENT_TOKEN_TYPE,
+			B.CLIENT_TOKEN_AUTOEX
+		FROM
+		<include refid="accessTokenTable" /> A,
+		<include refid="clientTable" /> B
+		WHERE
+			A.ACCESS_TOKEN = #{accessToken}
+		AND B.CLIENT_ID = A.CLIENT_ID
+	</select>
+
+	<select id="getNow" resultType="string">
+		SELECT sysdate FROM dual
+	</select>
+
+	<select id="getResourceUserInfoByID" parameterType="map" resultType="hashmap">
+		SELECT
+		<foreach collection="sKey" index="index" item="item" separator=",">
+			<choose>
+				<when test="item == 'openid'">
+					SUB AS ${item}
+				</when>
+				<when test="item == 'profile'">
+					PREFERRED_USERNAME, NAME, PROFILE, GENDER, BIRTHDATE
+				</when>
+				<when test="item == 'email'">
+					EMAIL AS ${item}
+				</when>
+				<when test="item == 'address'">
+					ADDRESS_ID AS ${item}
+				</when>
+				<when test="item == 'phone'">
+					PHONE_NUMBER AS ${item}
+				</when>
+			</choose>
+		</foreach>
+		FROM
+		user_info
+		WHERE
+		PREFERRED_USERNAME = #{wKey}
+	</select>
+	
+	<!-- API SERVER List 전체 조회 -->
+	<select id="getApiList" parameterType="map" resultType="hashmap">
+		SELECT *
+		FROM (
+			SELECT ROWNUM RNUM, A.*
+			FROM (
+				SELECT
+					API_ID,
+					API_SECRET,
+					API_NAME,
+					API_SERVICE_URL,
+					API_USABLE
+				FROM
+				<include refid="apiTable" />
+				<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(apiId)">
+				WHERE
+		            API_ID = #{apiId}
+			    </if>
+				ORDER BY
+					API_NAME asc
+			) A
+		) WHERE RNUM BETWEEN #{pStart, jdbcType=INTEGER} AND #{pEnd, jdbcType=INTEGER}
+	</select>
+	
+	<!-- API SERVER 총 갯수 -->
+    <select id="getApiTotalList" parameterType="map" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM
+		<include refid="apiTable" />
+		<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(apiId)">
+		WHERE
+			API_ID = #{apiId}
+		</if>
+    </select>
+    
+    <!-- API SERVER 정보 조회 -->
+	<select id="getApiInfoByApiId" parameterType="string" resultType="hashmap">
+		SELECT
+			API_ID,
+			API_NAME,
+			API_SECRET,
+			API_SERVICE_URL,
+			API_USABLE
+		FROM
+		<include refid="apiTable" />
+		WHERE
+			API_ID = #{apiId}
+	</select>
+	
+	<!-- API SERVER 정보 변경 -->
+	<update id="updateApiInfo" parameterType="map">
+		UPDATE
+			<include refid="apiTable" />
+		SET
+			API_NAME = #{apiName},
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(apiSecret)">
+			API_SECRET = #{apiSecret},
+			</if>
+			API_SERVICE_URL = #{apiUrl},
+			API_USABLE = #{usableApi}
+		WHERE
+			API_ID = #{apiId}
+	</update>
+	
+	<!-- API SERVER 삭제 -->
+	<delete id="deleteApi" parameterType="map">
+		DELETE FROM
+		<include refid="apiTable" />
+		WHERE
+			API_ID = #{apiId}
+	</delete>
+	
+	<!-- API SERVER 저장-->
+	<insert id="setApi" parameterType="map">
+		INSERT INTO
+		<include refid="apiTable" />
+		(
+			API_ID,
+			API_NAME,
+			API_SECRET,
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(apiUrl)">
+			API_SERVICE_URL,
+			</if>
+			API_USABLE
+		)
+		VALUES
+		(
+			#{apiId},
+			#{apiName},
+			#{apiSecret},
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(apiUrl)">
+            #{apiUrl},
+            </if>
+            #{usableApi}
+		)
+	</insert>
+	
+	<!-- API SERVER ID 중복 유무 확인 -->
+    <select id="getApiCheck" parameterType="map" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM
+		<include refid="apiTable" />
+		WHERE
+			API_ID = #{apiId}
+    </select>
+    
+    <!-- AcessToken 인증시 Log 저장-->
+	<insert id="setApiLog" parameterType="map">
+		INSERT INTO
+		<include refid="apiLogTable" />
+		(
+			API_ID,
+			CLIENT_ID,
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(userId)">
+			USER_ID,
+			</if>
+			ACCESS_DATE
+		)
+		VALUES
+		(
+			#{apiId},
+			#{clientId},
+			<if test="@com.dreamsecurity.util.CheckUtil@isNotEmpty(userId)">
+			#{userId},
+			</if>
+			SYSDATE
+		)
+	</insert>
+	
+	<!-- Client에 API의 접속 이력 통계치 -->
+    <select id="getApiLog" parameterType="map" resultType="hashmap">
+        SELECT
+            TO_CHAR(ACCESS_DATE,'YYYYMMDD') AS YM,
+            API_ID,
+			COUNT(*) AS CNT
+		FROM
+			<include refid="apiLogTable" />
+		WHERE
+			ACCESS_DATE between TO_DATE(#{startDate},'YYYY-MM-DD') and TO_DATE(#{endDate},'YYYY-MM-DD') + 1
+			AND CLIENT_ID = #{clientId}
+		GROUP BY TO_CHAR(ACCESS_DATE,'YYYYMMDD'), API_ID
+		ORDER BY YM
+    </select>
+
+</mapper>

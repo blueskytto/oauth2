@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+	<!-- 에러 메세지 Resource 사용 등록 -->
+	<util:map id="errorMsg">
+		<entry key="101">
+			<util:map>
+				<entry key="error" value="인증실패"></entry>
+				<entry key="error_code" value="101"></entry>
+				<entry key="error_description" value="잘못된 Authorization"></entry>
+			</util:map>
+		</entry>
+		<entry key="201">
+			<util:map>
+				<entry key="error" value="인증실패"></entry>
+				<entry key="error_code" value="301"></entry>
+				<entry key="error_description" value="잘못된 Authorization"></entry>
+			</util:map>
+		</entry>
+		<entry key="202">
+			<util:map>
+				<entry key="error" value="인증실패(invalid Token)"></entry>
+				<entry key="error_code" value="302"></entry>
+				<entry key="error_description" value="유효하지 않은 AccessToken"></entry>
+			</util:map>
+		</entry>
+		<entry key="203">
+			<util:map>
+				<entry key="error" value="인증실패(invalid Token)"></entry>
+				<entry key="error_code" value="303"></entry>
+				<entry key="error_description" value="잘못된 형태의 AccessToken"></entry>
+			</util:map>
+		</entry>
+		<entry key="301">
+			<util:map>
+				<entry key="error" value="내부에러"></entry>
+				<entry key="error_code" value="301"></entry>
+				<entry key="error_description" value="SQLException"></entry>
+			</util:map>
+		</entry>
+
+		<!-- Authorization Response Error -->
+		<entry key="4100">
+			<util:map>
+				<entry key="error" value="invalid_request"></entry>
+				<entry key="error_code" value="4100"></entry>
+				<entry key="error_description" value="The request is missing a required parameter"></entry>
+			</util:map>
+		</entry>
+		<entry key="4101">
+			<util:map>
+				<entry key="error" value="unauthorized_client"></entry>
+				<entry key="error_code" value="4101"></entry>
+				<entry key="error_description" value="unregistered Client"></entry>
+			</util:map>
+		</entry>
+		<entry key="4102">
+			<util:map>
+				<entry key="error" value="access_denied"></entry>
+				<entry key="error_code" value="4102"></entry>
+				<entry key="error_description" value="access_denied"></entry>
+			</util:map>
+		</entry>
+		<entry key="4103">
+			<util:map>
+				<entry key="error" value="unsupported_response_type"></entry>
+				<entry key="error_code" value="4103"></entry>
+				<entry key="error_description" value="unsupported_response_type"></entry>
+			</util:map>
+		</entry>
+		<entry key="4104">
+			<util:map>
+				<entry key="error" value="server_error"></entry>
+				<entry key="error_code" value="4104"></entry>
+				<entry key="error_description" value="server_error"></entry>
+			</util:map>
+		</entry>
+		<entry key="4105">
+			<util:map>
+				<entry key="error" value="temporarily_unavailable"></entry>
+				<entry key="error_code" value="4105"></entry>
+				<entry key="error_description" value="temporarily_unavailable"></entry>
+			</util:map>
+		</entry>
+		<entry key="4106">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="4106"></entry>
+				<entry key="error_description" value="unregistered Redirect-Uri"></entry>
+			</util:map>
+		</entry>
+		<entry key="4107">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="4107"></entry>
+				<entry key="error_description" value="발급한 클라이언트 또는 요청코드가 아닙니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="4108">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="4108"></entry>
+				<entry key="error_description" value="유효한 코드가 아닙니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="4109">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="4109"></entry>
+				<entry key="error_description" value="발급신청한 클라이언트가 아닙니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="4110">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="4110"></entry>
+				<entry key="error_description" value="인증코드 유효기간 초과"></entry>
+			</util:map>
+		</entry>
+		<entry key="4111">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="4111"></entry>
+				<entry key="error_description" value="Include unregistered Scope"></entry>
+			</util:map>
+		</entry>
+		<entry key="4112">
+			<util:map>
+				<entry key="error" value="unauthorized_client"></entry>
+				<entry key="error_code" value="4112"></entry>
+				<entry key="error_description" value="API가 유효한 상태가 아닙니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="4300">
+			<util:map>
+				<entry key="error" value="access_denied"></entry>
+				<entry key="error_code" value="4300"></entry>
+				<entry key="error_description" value="사용자가 존재하지 않습니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="4301">
+			<util:map>
+				<entry key="error" value="access_denied"></entry>
+				<entry key="error_code" value="4301"></entry>
+				<entry key="error_description" value="패스워드가 일치하지 않습니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="4400">
+			<util:map>
+				<entry key="error" value="unauthorized_client"></entry>
+				<entry key="error_code" value="4400"></entry>
+				<entry key="error_description" value="클라이언트 패스워드가 일치하지 않습니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="6000">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="6000"></entry>
+				<entry key="error_description" value="잘못된  Refresh Token."></entry>
+			</util:map>
+		</entry>
+		<entry key="6001">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="6001"></entry>
+				<entry key="error_description" value="Token 유효시간 초과."></entry>
+			</util:map>
+		</entry>
+		<entry key="6002">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="6002"></entry>
+				<entry key="error_description" value="잘못된 Token입니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="7001">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="7001"></entry>
+				<entry key="error_description" value="유효하지 않는 인증 토큰(Bearer)입니다."></entry>
+			</util:map>
+		</entry>
+		<entry key="8001">
+			<util:map>
+				<entry key="error" value="invalid_grant"></entry>
+				<entry key="error_code" value="8001"></entry>
+				<entry key="error_description" value="잘못된 접근입니다."></entry>
+			</util:map>
+		</entry>
+
+	</util:map>
+
+</beans>
