@@ -9,10 +9,12 @@
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
+	<!-- 라이센스 -->
+	<!-- 
 	<listener>
 		<listener-class>com.dreamsecurity.auth.listener.AuthLoaderListener</listener-class>
 	</listener>
-	
+	 -->
 	<!-- License 파일 경로가 변경될 경우 절대경로로 입력 -->
 	<!--
 	<context-param>
